@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>モンキーカウンター</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{
+  font-family:sans-serif;
+  text-align:center;
+  padding:3px;
+  background:#ffeef3;   /* ← 薄いピンク */
+}
+input{
+  font-size:18px;
+  margin:5px;
+  padding:6px;
+  width:100px;
+  border-radius:8px;
+  border:1px solid #ccc;
+  background:white;
+}
+
+/* ボタン */
+button{
+  font-size:16px;
+  margin:6px;
+  padding:8px 14px;
+  border:none;
+  border-radius:12px;
+  background:#ff8fb1;      /* ピンク */
+  color:white;
+  font-weight:bold;
+  box-shadow:0 2px 6px rgba(0,0,0,0.2);
+  transition:0.2s;
+}
+
+/* 押したとき */
+button:active{
+  transform:scale(0.96);
+  background:#ff6f9a;
+}
+
+.big{
+  font-size:13px;
+  margin:5px 0;
+}
+</style>
+</head>
+<body>
+
+<h3>** 5枚役 **</h3>
+
+開始G:
+<input type="number" id="startG" value="0">
+現在G:
+<input type="number" id="currentG" oninput="updateStats()"><br>
+
+総G数: <span id="totalG">0</span> G  ,&nbsp;&nbsp;5枚役: <span id="count">0</span> 回  ,&nbsp;&nbsp;現在の確率: <span id="prob">-</span><br>
+
+<button onclick="add()">＋1</button>
+<button onclick="record()">記録</button>
+<br>
+<div>
+
+<canvas id="chart" height="200"></canvas>
+
+<div class="big">設定目安[設定1: 38][設定2: 36][設定4: 30][設定5: 24][設定6: 22]
+</div>
+
+<h3>** 激走チャージ終了ボイス **</h3>
+
+<div>
+  <button onclick="addKenji()">* 落ち着くんだ憲二 *</button>
+  回数: <span id="kenjiCount">0</span>
+, 出現率: <span id="kenjiRate">-</span>
+</div>
+
+<div>
+  <button onclick="addKewai()">**** この気配は **** </button>
+  回数: <span id="kewaiCount">0</span> 
+  , 出現率: <span id="kewaiRate">-</span><br>
+</div>
+
+<div style="margin-top:10px;">
+  合計: <span id="voiceTotal">0</span><br>
+</div><br>
+
+<button onclick="resetAll()">リセット</button>
+
+<script>
+let count=0;
+let labels=[];
+let data=[];
+let kewai = 0;
+let kenji = 0;
+
+const ctx=document.getElementById("chart").getContext("2d");
+
+const chart=new Chart(ctx,{
+ type:'line',
+ data:{
+  labels:labels,
+  datasets:[{
+    label:'5枚役確率',
+    data:data,
+    borderWidth:2,
+    fill:false
+  }]
+ },
+ options:{
+  scales:{
+   y:{
+    min:15,
+    max:45,
+    ticks:{stepSize:5},
+    grid: {color: (ctx) => {
+        if (ctx.tick && ctx.tick.value === 30) {
+          return 'red';} return '#ddd';}
+    },
+    title:{display:true,text:'各Gの5枚役確率 1/x'}
+   },
+   x:{
+    title:{display:true,text:'経過ゲーム数'}
+   }
+  }
+ }
+});
+
+function add(){
+ count++;
+ document.getElementById("count").textContent=count;
+ updateStats();
+}
+
+function updateStats(){
+ const start=Number(document.getElementById("startG").value);
+ const current=Number(document.getElementById("currentG").value);
+ const total=current-start;
+
+ document.getElementById("totalG").textContent=total;
+
+ if(count>0 && total>0){
+   const prob=(total/count).toFixed(2);
+   document.getElementById("prob").textContent="1/"+prob;
+ }else{
+   document.getElementById("prob").textContent="-";
+ }
+}
+
+function record(){
+ const start=Number(document.getElementById("startG").value);
+ const current=Number(document.getElementById("currentG").value);
+ const total=current-start;
+
+ if(count===0 || total<=0) return;
+
+ const prob=total/count;
+
+ labels.push(total+"G");
+ data.push(prob);
+
+ chart.update();
+}
+
+
+function resetAll(){
+ count=0;
+
+ // ← 配列を作り直さない
+ labels.length = 0;
+ data.length = 0;
+
+ document.getElementById("count").textContent=0;
+ document.getElementById("totalG").textContent=0;
+ document.getElementById("prob").textContent="-";
+
+ // グラフ
+ chart.data.labels = labels;
+ chart.data.datasets[0].data = data;
+ chart.update();
+
+ // ボイス
+ kewai = 0;
+ kenji = 0;
+
+ document.getElementById("kewaiCount").textContent=0;
+ document.getElementById("kenjiCount").textContent=0;
+ document.getElementById("voiceTotal").textContent=0;
+ document.getElementById("kewaiRate").textContent="-";
+ document.getElementById("kenjiRate").textContent="-";
+}
+
+
+function addKewai(){
+  kewai++;
+  updateVoiceStats();
+}
+
+function addKenji(){
+  kenji++;
+  updateVoiceStats();
+}
+
+function updateVoiceStats(){
+  const total = kewai + kenji;
+
+  document.getElementById("kewaiCount").textContent = kewai;
+  document.getElementById("kenjiCount").textContent = kenji;
+  document.getElementById("voiceTotal").textContent = total;
+
+  if(total > 0){
+    document.getElementById("kewaiRate").textContent =
+      Math.round((kewai/total)*100) + "%";
+
+    document.getElementById("kenjiRate").textContent =
+      Math.round((kenji/total)*100) + "%";
+  }
+}
+
+</script>
+
+</body>
+</html>
